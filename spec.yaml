@@ -1,0 +1,214 @@
+openapi: 3.0.3
+
+info:
+  title: ImageLens API
+  version: '1.0.0'
+  description: "API for ImageLens"
+
+servers:
+  - url: 'http://api.imagelens.ai'
+
+# See https://github.com/zalando/connexion/pull/761
+paths:
+  /vector:
+    get:
+      tags:
+        - "Similarity"
+      operationId: similarity.p_get_all
+      summary: "The endpoint retrieves all vectors."
+      responses:
+        "200":
+          description: "Vectors retrieved."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    enum:
+                      - list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImageEncodingData'
+        '400':
+          $ref: '#/components/responses/Error'
+  /vector/{vector_id}:
+    get:
+      tags:
+        - "Similarity"
+      operationId: similarity.p_get_one
+      summary: "The endpoint retrieves details of a vector."
+      parameters:
+        - in: path
+          required: true
+          name: vector_id
+          schema:
+            type: string
+          description: "The ID of the vector."
+      responses:
+        "200":
+          description: "Vector retrieved."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    enum:
+                      - object
+                  data:
+                      $ref: '#/components/schemas/ImageEncodingData'
+        '400':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags:
+        - "Similarity"
+      operationId: similarity.p_delete
+      summary: "The endpoint deletes details of a vector."
+      parameters:
+        - in: path
+          required: true
+          name: vector_id
+          schema:
+            type: string
+          description: "The ID of the vector."
+      responses:
+        "201":
+          description: "Vector deleted."
+  /vector/create:
+    post:
+      tags:
+        - "Similarity"
+      operationId: similarity.p_create_vector
+      summary: "This endpoint registers an image and generates a vector."
+      requestBody:
+        description: "Registers an Image and generates it's vector."
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterImageRequest'
+      responses:
+        '200':
+          description: "Vector generated."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    enum:
+                      - object
+                  data:
+                    $ref: '#/components/schemas/ImageEncodingData'
+        '400':
+          $ref: '#/components/responses/Error'
+  /vector/similar:
+    post:
+      tags:
+        - "Similarity"
+      operationId: similarity.p_similar_new
+      summary: "The endpoint returns all vectors that are similar to the supplied image ."
+      requestBody:
+        description: "Return similar vectors."
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterImageRequest'
+      responses:
+        '200':
+          description: "Similar vectors."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    enum:
+                      - list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SimilarVectors'
+        '400':
+          $ref: '#/components/responses/Error'
+components:
+  parameters:
+    language:
+      in: query
+      name: language
+      required: false
+      schema:
+        type: string
+        default: en
+      description: Language
+  schemas:
+    Error:
+      type: object
+      properties:
+        error_type:
+          type: string
+          enum:
+            - no_image_supplied
+          description: |
+              - `"no_image_supplied"`: "No image is supplied."
+        error_description:
+          type: string
+    SimilarVectors:
+      type: object
+      properties:
+        error_type:
+          type: string
+    RegisterImageRequest:
+      type: object
+      properties:
+        image_url:
+          type: string
+          description: "Url of image to generate econding for."
+          x-nullable: True
+        misc:
+          type: string
+          x-nullable: True
+        image_file:
+          type: string
+          format: binary
+          description: "An actual image to be uploaded."
+          x-nullable: True
+    ImageEncodingData:
+      type: object
+      properties:
+        vector_id:
+          type: integer
+          description: "Unique ID of the encoded image."
+        image_url:
+          type: string
+          x-nullable: True
+          description: "Url of the image to be encoded."
+        misc:
+          type: string
+          x-nullable: True
+          description: "Additional information about the image."
+        image_blob:
+          type: string
+          format: binary
+          x-nullable: True
+          description: "Binary image that was uploaded to be encoded."
+        encoding:
+          type: object
+          x-nullable: True
+          description: "Encoded version of the image."
+  responses:
+    Unauthorized:
+      description: Unauthorized
+    Error:
+      description: "imageLens Api Error."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
